@@ -1,0 +1,23 @@
+.Board {
+	margin: 0 auto;
+}
+
+.Board-table {
+	border: lightslategray solid 20px;
+	border-radius: 10px;
+	border-collapse: separate;
+}
+
+.Board-body {
+	border-radius: 10px;
+}
+
+.Board-win-image {
+	width: 300px;
+	border-radius: 20px;
+}
+
+.Board-moves {
+	font-size: 20px;
+	margin-top: 10px;
+}
