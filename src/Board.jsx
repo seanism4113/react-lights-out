@@ -28,87 +28,62 @@ import winImage from "./winner.avif";
  *
  **/
 
-const Board = ({ nrows = 5, ncols = 5, chanceLightStartsOn = 0.5 }) => {
-	/** create a board nrows high/ncols wide, each cell randomly lit or unlit */
-	const createBoard = () => {
-		let initialBoard = [];
-		for (let i = 0; i < nrows; i++) {
-			let row = [];
-			for (let j = 0; j < ncols; j++) {
-				row.push(Math.random() < chanceLightStartsOn);
-			}
-			initialBoard.push(row);
-		}
-		return initialBoard;
-	};
+/** Game board of Lights Out. */
+const Board = ({ nrows = 5, ncols = 5, litChance = 0.5 }) => {
+	const createBoard = () => Array.from({ length: nrows }, () => Array.from({ length: ncols }, () => Math.random() < litChance));
 
 	const [board, setBoard] = useState(createBoard());
 	const [moves, setMoves] = useState(0);
 
-	const hasWon = () => {
-		const hasLights = board.some((row) => row.some((cell) => cell === true));
-		return hasLights === false ? true : false;
+	/** Check if the player has won */
+	const hasWon = () => board.every((row) => row.every((cell) => !cell));
+
+	/** Flip a single cell's state */
+	const flipCell = (y, x, boardCopy) => {
+		if (y >= 0 && y < nrows && x >= 0 && x < ncols) {
+			boardCopy[y][x] = !boardCopy[y][x];
+		}
 	};
 
-	const wonHtml = () => {
-		return (
-			<>
-				<h2> Congratulations! You won Lights Out in {moves} moves! </h2>
-				<img className="Board-win-image" src={winImage} alt="win image" />
-			</>
-		);
-	};
-
+	/** Flip cells around a given coordinate */
 	const flipCellsAround = (coord) => {
+		const [y, x] = coord.split("-").map(Number);
 		setBoard((oldBoard) => {
-			const [y, x] = coord.split("-").map(Number);
-
-			const flipCell = (y, x, boardCopy) => {
-				// if this coord is actually on board, flip it
-
-				if (x >= 0 && x < ncols && y >= 0 && y < nrows) {
-					boardCopy[y][x] = !boardCopy[y][x];
-				}
-			};
-
 			const boardCopy = oldBoard.map((row) => [...row]);
-
 			flipCell(y, x, boardCopy);
 			flipCell(y - 1, x, boardCopy);
 			flipCell(y + 1, x, boardCopy);
-			flipCell(y, x + 1, boardCopy);
 			flipCell(y, x - 1, boardCopy);
-			setMoves(moves + 1);
+			flipCell(y, x + 1, boardCopy);
 			return boardCopy;
 		});
+		setMoves((prev) => prev + 1);
 	};
 
-	const boardHtml = () => {
-		return (
-			<>
-				<table className="Board-table">
-					<tbody className="Board-body">
-						{board.map((row, rowIndex) => (
-							<tr key={rowIndex}>
-								{row.map((cell, cellIndex) => {
-									const cellCoord = `${rowIndex}-${cellIndex}`;
-									return <Cell isLit={cell} key={cellCoord} flipCellsAroundMe={() => flipCellsAround(cellCoord)} />;
-								})}
-							</tr>
-						))}
-					</tbody>
-				</table>
-				<span className="Board-moves">
-					<b>Moves: </b>
-					{moves}
-				</span>
-			</>
-		);
-	};
+	/** Render the board as a table of cells */
+	const renderBoard = () =>
+		board.map((row, y) => (
+			<tr key={y}>
+				{row.map((cell, x) => {
+					const coord = `${y}-${x}`;
+					return <Cell key={coord} isLit={cell} flipCellsAroundMe={() => flipCellsAround(coord)} />;
+				})}
+			</tr>
+		));
 
-	// if the game is won, just show a winning msg & render nothing else
-
-	return hasWon() ? wonHtml() : boardHtml();
+	return hasWon() ? (
+		<div className="Board Board-won">
+			<h2>Congratulations! You won in {moves} moves!</h2>
+			<img src={winImage} alt="You win!" className="Board-win-image" />
+		</div>
+	) : (
+		<div className="Board">
+			<table className="Board-table">
+				<tbody>{renderBoard()}</tbody>
+			</table>
+			<p className="Board-moves">Moves: {moves}</p>
+		</div>
+	);
 };
 
 export default Board;
